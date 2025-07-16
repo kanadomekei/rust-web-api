@@ -1,6 +1,5 @@
 mod domain;
 mod handlers;
-mod openapi;
 mod routes;
 
 #[tokio::main]

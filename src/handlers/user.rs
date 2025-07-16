@@ -13,14 +13,6 @@ use std::{
 
 type Db = Arc<RwLock<HashMap<u64, User>>>;
 
-#[utoipa::path(
-    post,
-    path = "/users",
-    request_body = CreateUser,
-    responses(
-        (status = 201, description = "User created successfully", body = User)
-    )
-)]
 pub async fn create_user(
     State(db): State<Db>,
     Json(input): Json<CreateUser>,
@@ -36,30 +28,12 @@ pub async fn create_user(
     (StatusCode::CREATED, Json(user))
 }
 
-#[utoipa::path(
-    get,
-    path = "/users",
-    responses(
-        (status = 200, description = "List all users", body = [User])
-    )
-)]
 pub async fn get_users(State(db): State<Db>) -> impl IntoResponse {
     let db = db.read().unwrap();
     let users: Vec<User> = db.values().cloned().collect();
     (StatusCode::OK, Json(users))
 }
 
-#[utoipa::path(
-    get,
-    path = "/users/{id}",
-    params(
-        ("id" = u64, Path, description = "User ID")
-    ),
-    responses(
-        (status = 200, description = "User found", body = User),
-        (status = 404, description = "User not found")
-    )
-)]
 pub async fn get_user(State(db): State<Db>, Path(id): Path<u64>) -> impl IntoResponse {
     let db = db.read().unwrap();
     if let Some(user) = db.get(&id) {
@@ -69,18 +43,6 @@ pub async fn get_user(State(db): State<Db>, Path(id): Path<u64>) -> impl IntoRes
     }
 }
 
-#[utoipa::path(
-    put,
-    path = "/users/{id}",
-    params(
-        ("id" = u64, Path, description = "User ID")
-    ),
-    request_body = CreateUser,
-    responses(
-        (status = 200, description = "User updated", body = User),
-        (status = 404, description = "User not found")
-    )
-)]
 pub async fn update_user(
     State(db): State<Db>,
     Path(id): Path<u64>,
@@ -96,17 +58,6 @@ pub async fn update_user(
     }
 }
 
-#[utoipa::path(
-    delete,
-    path = "/users/{id}",
-    params(
-        ("id" = u64, Path, description = "User ID")
-    ),
-    responses(
-        (status = 204, description = "User deleted"),
-        (status = 404, description = "User not found")
-    )
-)]
 pub async fn delete_user(State(db): State<Db>, Path(id): Path<u64>) -> impl IntoResponse {
     let mut db = db.write().unwrap();
     if db.remove(&id).is_some() {
