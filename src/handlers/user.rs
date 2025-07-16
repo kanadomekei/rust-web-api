@@ -1,22 +1,124 @@
-use crate::domain::user::User;
-use axum::{routing::get, Json, Router};
+use crate::domain::user::{CreateUser, User};
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
+};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
+
+type Db = Arc<RwLock<HashMap<u64, User>>>;
+
+#[utoipa::path(
+    post,
+    path = "/users",
+    request_body = CreateUser,
+    responses(
+        (status = 201, description = "User created successfully", body = User)
+    )
+)]
+pub async fn create_user(
+    State(db): State<Db>,
+    Json(input): Json<CreateUser>,
+) -> impl IntoResponse {
+    let mut db = db.write().unwrap();
+    let id = db.keys().max().unwrap_or(&0) + 1;
+    let user = User {
+        id,
+        name: input.name,
+        email: input.email,
+    };
+    db.insert(id, user.clone());
+    (StatusCode::CREATED, Json(user))
+}
 
 #[utoipa::path(
     get,
-    path = "/json",
+    path = "/users",
     responses(
-        (status = 200, description = "Returns a user object as JSON", body = User)
+        (status = 200, description = "List all users", body = [User])
     )
 )]
-pub async fn json_handler() -> Json<User> {
-    let user = User {
-        id: 1,
-        name: "axum user".to_string(),
-        email: "axum@example.com".to_string(),
-    };
-    Json(user)
+pub async fn get_users(State(db): State<Db>) -> impl IntoResponse {
+    let db = db.read().unwrap();
+    let users: Vec<User> = db.values().cloned().collect();
+    (StatusCode::OK, Json(users))
 }
 
-pub fn routes() -> Router {
-    Router::new().route("/json", get(json_handler))
+#[utoipa::path(
+    get,
+    path = "/users/{id}",
+    params(
+        ("id" = u64, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User found", body = User),
+        (status = 404, description = "User not found")
+    )
+)]
+pub async fn get_user(State(db): State<Db>, Path(id): Path<u64>) -> impl IntoResponse {
+    let db = db.read().unwrap();
+    if let Some(user) = db.get(&id) {
+        (StatusCode::OK, Json(user.clone())).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
+#[utoipa::path(
+    put,
+    path = "/users/{id}",
+    params(
+        ("id" = u64, Path, description = "User ID")
+    ),
+    request_body = CreateUser,
+    responses(
+        (status = 200, description = "User updated", body = User),
+        (status = 404, description = "User not found")
+    )
+)]
+pub async fn update_user(
+    State(db): State<Db>,
+    Path(id): Path<u64>,
+    Json(input): Json<CreateUser>,
+) -> impl IntoResponse {
+    let mut db = db.write().unwrap();
+    if let Some(user) = db.get_mut(&id) {
+        user.name = input.name;
+        user.email = input.email;
+        (StatusCode::OK, Json(user.clone())).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
+#[utoipa::path(
+    delete,
+    path = "/users/{id}",
+    params(
+        ("id" = u64, Path, description = "User ID")
+    ),
+    responses(
+        (status = 204, description = "User deleted"),
+        (status = 404, description = "User not found")
+    )
+)]
+pub async fn delete_user(State(db): State<Db>, Path(id): Path<u64>) -> impl IntoResponse {
+    let mut db = db.write().unwrap();
+    if db.remove(&id).is_some() {
+        StatusCode::NO_CONTENT.into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
+pub fn routes(db: Db) -> Router {
+    Router::new()
+        .route("/users", post(create_user).get(get_users))
+        .route("/users/:id", get(get_user).put(update_user).delete(delete_user))
+        .with_state(db)
 } 

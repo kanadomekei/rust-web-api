@@ -1,4 +1,7 @@
-use crate::{domain::user::User, handlers};
+use crate::{
+    domain::user::{CreateUser, User},
+    handlers,
+};
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
@@ -9,10 +12,14 @@ use utoipa::{
     paths(
         handlers::hello::handler,
         handlers::hello::hello_name,
-        handlers::user::json_handler,
+        handlers::user::create_user,
+        handlers::user::get_users,
+        handlers::user::get_user,
+        handlers::user::update_user,
+        handlers::user::delete_user,
     ),
     components(
-        schemas(User)
+        schemas(User, CreateUser)
     ),
     tags(
         (name = "rust-web-api", description = "A simple Rust web API")
