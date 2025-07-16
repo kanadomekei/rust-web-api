@@ -1,18 +1,8 @@
-use crate::handlers;
+use crate::usecase::user_service::UserService;
+use crate::presentation::user_handlers;
 use axum::Router;
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::Arc;
 
-use crate::domain::user::User;
-
-type Db = Arc<RwLock<HashMap<u64, User>>>;
-
-pub fn create_router() -> Router {
-    let db = Db::default();
-
-    Router::new()
-        .merge(handlers::hello::routes())
-        .merge(handlers::user::routes(db))
+pub fn create_router(user_service: Arc<UserService>) -> Router {
+    Router::new().merge(user_handlers::routes(user_service))
 } 
