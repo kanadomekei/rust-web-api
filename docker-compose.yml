@@ -1,0 +1,16 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rust-web-api:local
+    environment:
+      - DATABASE_URL=sqlite:///data/app.db
+    ports:
+      - "8080:8080"
+    volumes:
+      - app-data:/data
+    restart: unless-stopped
+
+volumes:
+  app-data:
