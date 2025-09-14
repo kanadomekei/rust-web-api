@@ -3,23 +3,24 @@
 FROM rust:1.82-slim AS builder
 WORKDIR /app
 
-# 1) Cache dependencies
+# 1) Install nightly (edition 2024 requires nightly cargo)
+RUN rustup toolchain install nightly && rustup default nightly
+
+# 2) Cache dependencies
 COPY Cargo.toml Cargo.lock ./
-RUN rustup toolchain install nightly \
- && rustup default nightly \
- && mkdir -p src && echo "fn main(){}" > src/main.rs \
- && cargo build --release \
+RUN mkdir -p src && echo "fn main(){}" > src/main.rs \
+ && cargo +nightly build --release \
  && rm -rf src
 
-# 2) Build application
+# 3) Build application
 COPY src ./src
 COPY migrations ./migrations
-RUN cargo build --release
+RUN cargo +nightly build --release
 
-# 3) Runtime image
+# 4) Runtime image
 FROM debian:bookworm-slim AS runtime
 ENV APP_HOME=/app \
-    DATABASE_URL=sqlite:///data/app.db \
+    DATABASE_URL=mysql://root:@tidb:4000/test \
     RUST_LOG=info
 WORKDIR ${APP_HOME}
 

@@ -1,17 +1,17 @@
 use crate::domain::user::{CreateUser, User, UserRepository};
 use async_trait::async_trait;
-use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
+use sqlx::{mysql::MySqlRow, Row, MySqlPool};
 
 pub struct SqlxUserRepository {
-    pool: SqlitePool,
+    pool: MySqlPool,
 }
 
 impl SqlxUserRepository {
-    pub fn new(pool: SqlitePool) -> Self {
+    pub fn new(pool: MySqlPool) -> Self {
         Self { pool }
     }
 
-    fn map_row_to_user(row: &SqliteRow) -> User {
+    fn map_row_to_user(row: &MySqlRow) -> User {
         let id: i64 = row.get("id");
         let name: String = row.get("name");
         let email: String = row.get("email");
@@ -26,7 +26,7 @@ impl SqlxUserRepository {
 #[async_trait]
 impl UserRepository for SqlxUserRepository {
     async fn create_user(&self, user_data: CreateUser) -> User {
-        // Insert user and fetch last inserted id
+        // Insert user and fetch last inserted id (MySQL/TiDB)
         let result = sqlx::query("INSERT INTO users (name, email) VALUES (?, ?)")
             .bind(&user_data.name)
             .bind(&user_data.email)
@@ -34,9 +34,8 @@ impl UserRepository for SqlxUserRepository {
             .await
             .expect("failed to insert user");
 
-        let id = result.last_insert_rowid() as u64;
+        let id = result.last_insert_id();
 
-        // Return the created user
         User {
             id,
             name: user_data.name,

@@ -1162,6 +1162,7 @@ dependencies = [
  "serde",
  "sqlx",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -1469,7 +1470,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "sqlx-core",
- "sqlx-sqlite",
+ "sqlx-mysql",
  "syn 1.0.109",
  "tempfile",
  "tokio",
@@ -1507,6 +1508,7 @@ dependencies = [
  "percent-encoding",
  "rand",
  "rsa",
+ "serde",
  "sha1",
  "sha2",
  "smallvec",
@@ -1571,7 +1573,6 @@ dependencies = [
  "libsqlite3-sys",
  "log",
  "percent-encoding",
- "serde",
  "sqlx-core",
  "tracing",
  "url",

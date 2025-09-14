@@ -5,12 +5,55 @@ services:
       dockerfile: Dockerfile
     image: rust-web-api:local
     environment:
-      - DATABASE_URL=sqlite:///data/app.db
+      - DATABASE_URL=mysql://root:@tidb:4000/test
     ports:
       - "8080:8080"
     volumes:
       - app-data:/data
     restart: unless-stopped
+    depends_on:
+      - tidb
+
+  tidb:
+    image: pingcap/tidb:latest
+    command:
+      - --store=tikv
+      - --path=pd:2379
+      - --advertise-address=tidb
+    ports:
+      - "4000:4000" # MySQL protocol
+    depends_on:
+      - pd
+      - tikv
+
+  pd:
+    image: pingcap/pd:latest
+    command:
+      - --name=pd
+      - --data-dir=/data/pd
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://pd:2379
+      - --advertise-peer-urls=http://pd:2380
+      - --initial-cluster=pd=http://pd:2380
+    volumes:
+      - pd-data:/data/pd
+    ports:
+      - "2379:2379"
+
+  tikv:
+    image: pingcap/tikv:latest
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tikv:20160
+      - --pd=pd:2379
+      - --data-dir=/data/tikv
+    depends_on:
+      - pd
+    volumes:
+      - tikv-data:/data/tikv
 
 volumes:
   app-data:
+  pd-data:
+  tikv-data:
