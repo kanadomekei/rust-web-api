@@ -1159,9 +1159,13 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
+ "http-body-util",
+ "hyper",
  "serde",
+ "serde_json",
  "sqlx",
  "tokio",
+ "tower",
  "url",
 ]
 
